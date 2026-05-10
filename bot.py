@@ -97,9 +97,10 @@ async def redeem(interaction: discord.Interaction, username: str):
             await interaction.followup.send(f"❌ Failed to kick user: {e}")
 
     else:
-        await interaction.followup.send(
-            "✅ User does NOT own the Game Pass."
-        )
+await interaction.followup.send(
+    "✅ User does NOT own the Game Pass.",
+    ephemeral=True
+)
 
 
 @bot.tree.command(name="gamepass", description="Show Game Pass information")
@@ -127,7 +128,10 @@ async def gamepass(interaction: discord.Interaction):
 
     view.add_item(button)
 
-    await interaction.response.send_message(embed=embed, view=view)
-
+    await interaction.response.send_message(
+    embed=embed,
+    view=view,
+    ephemeral=True
+)
 
 bot.run(TOKEN)
