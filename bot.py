@@ -7,7 +7,6 @@ import os
 TOKEN = os.getenv("TOKEN")
 
 GAMEPASS_ID = 174939572
-GUILD_ID = 1482831079122407600
 
 redeemed_accounts = set()
 
@@ -15,8 +14,6 @@ intents = discord.Intents.default()
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
-
-guild = discord.Object(id=GUILD_ID)
 
 
 # GET ROBLOX USER ID
@@ -60,7 +57,7 @@ async def owns_gamepass(user_id):
     return False
 
 
-# BOT READY
+# READY
 @bot.event
 async def on_ready():
 
@@ -68,7 +65,7 @@ async def on_ready():
 
     try:
 
-        synced = await bot.tree.sync(guild=guild)
+        synced = await bot.tree.sync()
 
         print(f"Synced {len(synced)} commands")
 
@@ -77,11 +74,10 @@ async def on_ready():
         print(e)
 
 
-# /REDEEM
+# REDEEM
 @bot.tree.command(
     name="redeem",
-    description="Redeem Roblox account",
-    guild=guild
+    description="Redeem Roblox account"
 )
 @app_commands.describe(username="Your Roblox username")
 async def redeem(interaction: discord.Interaction, username: str):
@@ -90,7 +86,6 @@ async def redeem(interaction: discord.Interaction, username: str):
 
     username_lower = username.lower()
 
-    # ALREADY USED
     if username_lower in redeemed_accounts:
 
         await interaction.followup.send(
@@ -99,7 +94,6 @@ async def redeem(interaction: discord.Interaction, username: str):
         )
         return
 
-    # GET USER ID
     user_id = await get_user_id(username)
 
     if not user_id:
@@ -110,18 +104,11 @@ async def redeem(interaction: discord.Interaction, username: str):
         )
         return
 
-    # CHECK GAMEPASS
     has_pass = await owns_gamepass(user_id)
 
-    # HAS GAMEPASS
     if has_pass:
 
         redeemed_accounts.add(username_lower)
-
-        await interaction.followup.send(
-            "✅ Gamepass found. Kicking user...",
-            ephemeral=True
-        )
 
         try:
 
@@ -130,9 +117,17 @@ async def redeem(interaction: discord.Interaction, username: str):
                 reason="Owns Roblox gamepass"
             )
 
+            await interaction.followup.send(
+                "✅ Gamepass found. User kicked.",
+                ephemeral=True
+            )
+
         except Exception as e:
 
-            print(e)
+            await interaction.followup.send(
+                f"❌ Kick failed: {e}",
+                ephemeral=True
+            )
 
     else:
 
@@ -142,22 +137,20 @@ async def redeem(interaction: discord.Interaction, username: str):
         )
 
 
-# /GAMEPASS
+# GAMEPASS
 @bot.tree.command(
     name="gamepass",
-    description="Gamepass info",
-    guild=guild
+    description="Show gamepass info"
 )
 async def gamepass(interaction: discord.Interaction):
 
     embed = discord.Embed(
         title="🎮 Elmir's mods Supporter",
         description=(
-            "Support the server and unlock exclusive perks by purchasing the Elmir's mods Supporter Game Pass!\n\n"
+            "Support the server and unlock exclusive perks.\n\n"
             "💰 Price: 500 Robux\n"
-            "🎁 Reward: Exclusive Supporter Discord role\n"
-            "🔓 Perks: Access to supporter-only channels, special badge & more!\n\n"
-            "After buying, use /redeem with your Roblox username."
+            "🎁 Reward: Exclusive role\n\n"
+            "Buy the gamepass then use /redeem."
         ),
         color=0x00ff00
     )
