@@ -117,19 +117,11 @@ async def gamepass(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🎮 Elmir's mods Supporter",
         description=(
-            "Support the server and unlock exclusive perks by purchasing the Elmir's mods Supporter Game Pass!
-
-"
-            "💰 Price: 500 Robux
-"
-            "🎁 Reward: Exclusive Supporter Discord role
-"
-            "🔓 Perks: Access to supporter-only channels, special badge & more!
-
-"
-            "Click Buy Game Pass below, then use /redeem with your Roblox username.
-
-"
+            "Support the server and unlock exclusive perks by purchasing the Elmir's mods Supporter Game Pass!\n\n"
+            "💰 Price: 500 Robux\n"
+            "🎁 Reward: Exclusive Supporter Discord role\n"
+            "🔓 Perks: Access to supporter-only channels, special badge & more!\n\n"
+            "Click Buy Game Pass below, then use /redeem with your Roblox username.\n\n"
             "After purchasing, use /redeem."
         ),
         color=0x00ff00
