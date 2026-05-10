@@ -62,20 +62,24 @@ async def on_ready():
 @app_commands.describe(username="Your Roblox username")
 async def redeem(interaction: discord.Interaction, username: str):
 
-    await interaction.response.defer(thinking=True)
+    await interaction.response.defer(ephemeral=True)
 
     username_lower = username.lower()
 
     if username_lower in used_usernames:
         await interaction.followup.send(
-            "❌ This Roblox username has already been used."
+            "❌ This Roblox username has already been used.",
+            ephemeral=True
         )
         return
 
     user_id = await get_user_id(username)
 
     if not user_id:
-        await interaction.followup.send("❌ Roblox user not found.")
+        await interaction.followup.send(
+            "❌ Roblox user not found.",
+            ephemeral=True
+        )
         return
 
     has_pass = await owns_gamepass(user_id)
@@ -90,17 +94,21 @@ async def redeem(interaction: discord.Interaction, username: str):
             )
 
             await interaction.followup.send(
-                f"🚫 {interaction.user.mention} was kicked because the Roblox account owns the restricted Game Pass."
+                f"🚫 {interaction.user.mention} was kicked because the Roblox account owns the restricted Game Pass.",
+                ephemeral=True
             )
 
         except Exception as e:
-            await interaction.followup.send(f"❌ Failed to kick user: {e}")
+            await interaction.followup.send(
+                f"❌ Failed to kick user: {e}",
+                ephemeral=True
+            )
 
-else:
-    await interaction.followup.send(
-        "✅ User does NOT own the Game Pass.",
-        ephemeral=True
-    )
+    else:
+        await interaction.followup.send(
+            "✅ User does NOT own the Game Pass.",
+            ephemeral=True
+        )
 
 
 @bot.tree.command(name="gamepass", description="Show Game Pass information")
@@ -109,11 +117,19 @@ async def gamepass(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🎮 Elmir's mods Supporter",
         description=(
-            "Support the server and unlock exclusive perks by purchasing the Elmir's mods Supporter Game Pass!\n\n"
-            "💰 Price: 500 Robux\n"
-            "🎁 Reward: Exclusive Supporter Discord role\n"
-            "🔓 Perks: Access to supporter-only channels, special badge & more!\n\n"
-            "Click Buy Game Pass below, then use /redeem with your Roblox username to get your role instantly!\n\n"
+            "Support the server and unlock exclusive perks by purchasing the Elmir's mods Supporter Game Pass!
+
+"
+            "💰 Price: 500 Robux
+"
+            "🎁 Reward: Exclusive Supporter Discord role
+"
+            "🔓 Perks: Access to supporter-only channels, special badge & more!
+
+"
+            "Click Buy Game Pass below, then use /redeem with your Roblox username.
+
+"
             "After purchasing, use /redeem."
         ),
         color=0x00ff00
@@ -129,9 +145,10 @@ async def gamepass(interaction: discord.Interaction):
     view.add_item(button)
 
     await interaction.response.send_message(
-    embed=embed,
-    view=view,
-    ephemeral=True
-)
+        embed=embed,
+        view=view,
+        ephemeral=True
+    )
+
 
 bot.run(TOKEN)
