@@ -5,9 +5,11 @@ import aiohttp
 import os
 
 TOKEN = os.getenv("TOKEN")
-GAMEPASS_ID = 174939572
 
-used_usernames = set()
+GAMEPASS_ID = 174939572
+SERVER_ID = 1482831079122407600
+
+redeemed_accounts = set()
 
 intents = discord.Intents.default()
 intents.members = True
@@ -49,16 +51,23 @@ async def owns_gamepass(user_id):
 
 @bot.event
 async def on_ready():
+
     print(f"Logged in as {bot.user}")
 
+    guild = discord.Object(id=SERVER_ID)
+
     try:
-        synced = await bot.tree.sync()
+        synced = await bot.tree.sync(guild=guild)
         print(f"Synced {len(synced)} command(s)")
     except Exception as e:
         print(e)
 
 
-@bot.tree.command(name="redeem", description="Check Roblox Game Pass ownership")
+@bot.tree.command(
+    name="redeem",
+    description="Check Roblox Game Pass ownership",
+    guild=discord.Object(id=SERVER_ID)
+)
 @app_commands.describe(username="Your Roblox username")
 async def redeem(interaction: discord.Interaction, username: str):
 
@@ -66,9 +75,10 @@ async def redeem(interaction: discord.Interaction, username: str):
 
     username_lower = username.lower()
 
-    if username_lower in used_usernames:
+    if username_lower in redeemed_accounts:
+
         await interaction.followup.send(
-            "❌ This Roblox username has already been used.",
+            "❌ This Roblox account has already been redeemed.",
             ephemeral=True
         )
         return
@@ -76,6 +86,7 @@ async def redeem(interaction: discord.Interaction, username: str):
     user_id = await get_user_id(username)
 
     if not user_id:
+
         await interaction.followup.send(
             "❌ Roblox user not found.",
             ephemeral=True
@@ -84,34 +95,42 @@ async def redeem(interaction: discord.Interaction, username: str):
 
     has_pass = await owns_gamepass(user_id)
 
-    used_usernames.add(username_lower)
-
     if has_pass:
+
+        redeemed_accounts.add(username_lower)
+
         try:
+
             await interaction.guild.kick(
                 interaction.user,
                 reason="User owns restricted Roblox Game Pass"
             )
 
             await interaction.followup.send(
-                f"🚫 {interaction.user.mention} was kicked because the Roblox account owns the restricted Game Pass.",
+                "🚫 You were kicked because this Roblox account owns the restricted Game Pass.",
                 ephemeral=True
             )
 
         except Exception as e:
+
             await interaction.followup.send(
                 f"❌ Failed to kick user: {e}",
                 ephemeral=True
             )
 
     else:
+
         await interaction.followup.send(
             "✅ User does NOT own the Game Pass.",
             ephemeral=True
         )
 
 
-@bot.tree.command(name="gamepass", description="Show Game Pass information")
+@bot.tree.command(
+    name="gamepass",
+    description="Show Game Pass information",
+    guild=discord.Object(id=SERVER_ID)
+)
 async def gamepass(interaction: discord.Interaction):
 
     embed = discord.Embed(
