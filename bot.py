@@ -7,18 +7,19 @@ import os
 TOKEN = os.getenv("TOKEN")
 
 GAMEPASS_ID = 174939572
-SERVER_ID = 1482831079122407600
 
+# Saves redeemed Roblox accounts
 redeemed_accounts = set()
 
 intents = discord.Intents.default()
 intents.members = True
-intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 
+# GET ROBLOX USER ID
 async def get_user_id(username):
+
     url = "https://users.roblox.com/v1/usernames/users"
 
     payload = {
@@ -27,7 +28,9 @@ async def get_user_id(username):
     }
 
     async with aiohttp.ClientSession() as session:
+
         async with session.post(url, json=payload) as response:
+
             data = await response.json()
 
             if data.get("data"):
@@ -36,11 +39,15 @@ async def get_user_id(username):
     return None
 
 
+# CHECK GAMEPASS
 async def owns_gamepass(user_id):
+
     url = f"https://inventory.roblox.com/v1/users/{user_id}/items/GamePass/{GAMEPASS_ID}"
 
     async with aiohttp.ClientSession() as session:
+
         async with session.get(url) as response:
+
             data = await response.json()
 
             if data.get("data"):
@@ -49,32 +56,40 @@ async def owns_gamepass(user_id):
     return False
 
 
+# BOT READY
 @bot.event
 async def on_ready():
 
     print(f"Logged in as {bot.user}")
 
-    guild = discord.Object(id=SERVER_ID)
-
     try:
-        synced = await bot.tree.sync(guild=guild)
-        print(f"Synced {len(synced)} command(s)")
+
+        # DELETE OLD COMMANDS
+        bot.tree.clear_commands(guild=None)
+
+        # SYNC NEW COMMANDS
+        synced = await bot.tree.sync()
+
+        print(f"Synced {len(synced)} commands")
+
     except Exception as e:
         print(e)
 
 
+# /REDEEM COMMAND
 @bot.tree.command(
     name="redeem",
-    description="Check Roblox Game Pass ownership",
-    guild=discord.Object(id=SERVER_ID)
+    description="Check Roblox Game Pass ownership"
 )
 @app_commands.describe(username="Your Roblox username")
 async def redeem(interaction: discord.Interaction, username: str):
 
+    # PRIVATE RESPONSE
     await interaction.response.defer(ephemeral=True)
 
     username_lower = username.lower()
 
+    # ALREADY REDEEMED
     if username_lower in redeemed_accounts:
 
         await interaction.followup.send(
@@ -83,6 +98,7 @@ async def redeem(interaction: discord.Interaction, username: str):
         )
         return
 
+    # GET ROBLOX ID
     user_id = await get_user_id(username)
 
     if not user_id:
@@ -93,22 +109,21 @@ async def redeem(interaction: discord.Interaction, username: str):
         )
         return
 
+    # CHECK GAMEPASS
     has_pass = await owns_gamepass(user_id)
 
+    # USER OWNS GAMEPASS
     if has_pass:
 
+        # SAVE ACCOUNT AS USED
         redeemed_accounts.add(username_lower)
 
         try:
 
+            # KICK USER
             await interaction.guild.kick(
                 interaction.user,
-                reason="User owns restricted Roblox Game Pass"
-            )
-
-            await interaction.followup.send(
-                "🚫 You were kicked because this Roblox account owns the restricted Game Pass.",
-                ephemeral=True
+                reason="Owns restricted Roblox Game Pass"
             )
 
         except Exception as e:
@@ -121,15 +136,15 @@ async def redeem(interaction: discord.Interaction, username: str):
     else:
 
         await interaction.followup.send(
-            "✅ User does NOT own the Game Pass.",
+            "✅ Roblox account does NOT own the Game Pass.",
             ephemeral=True
         )
 
 
+# /GAMEPASS COMMAND
 @bot.tree.command(
     name="gamepass",
-    description="Show Game Pass information",
-    guild=discord.Object(id=SERVER_ID)
+    description="Show Game Pass info"
 )
 async def gamepass(interaction: discord.Interaction):
 
@@ -140,8 +155,7 @@ async def gamepass(interaction: discord.Interaction):
             "💰 Price: 500 Robux\n"
             "🎁 Reward: Exclusive Supporter Discord role\n"
             "🔓 Perks: Access to supporter-only channels, special badge & more!\n\n"
-            "Click Buy Game Pass below, then use /redeem with your Roblox username.\n\n"
-            "After purchasing, use /redeem."
+            "Click Buy Game Pass below, then use /redeem with your Roblox username."
         ),
         color=0x00ff00
     )
