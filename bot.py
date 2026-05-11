@@ -4,124 +4,162 @@ from discord import app_commands
 import aiohttp
 import os
 
-# =========================
-# CONFIG
-# =========================
 TOKEN = os.getenv("TOKEN")
-GAMEPASS_ID = 174939572
 
-# =========================
-# BOT SETUP
-# =========================
+GAMEPASS_ID = 174939572
+SERVER_ID = 1482831079122407600
+
+redeemed_accounts = set()
+
 intents = discord.Intents.default()
-intents.members = True 
+intents.members = True
+intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# This clears if the bot restarts. Consider a database for permanent bans/kicks.
-redeemed_accounts = set()
-
-# =========================
-# ROBLOX FUNCTIONS
-# =========================
 
 async def get_user_id(username):
     url = "https://users.roblox.com/v1/usernames/users"
-    payload = {"usernames": [username], "excludeBannedUsers": False}
-    
+
+    payload = {
+        "usernames": [username],
+        "excludeBannedUsers": False
+    }
+
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload) as response:
             data = await response.json()
+
             if data.get("data"):
                 return data["data"][0]["id"]
+
     return None
 
+
 async def owns_gamepass(user_id):
-    # Note: The user's Roblox inventory MUST be set to Public for this to work.
     url = f"https://inventory.roblox.com/v1/users/{user_id}/items/GamePass/{GAMEPASS_ID}"
+
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            if response.status == 200:
-                data = await response.json()
-                return len(data.get("data", [])) > 0
+            data = await response.json()
+
+            if data.get("data"):
+                return len(data["data"]) > 0
+
     return False
 
-# =========================
-# EVENTS
-# =========================
 
 @bot.event
 async def on_ready():
+
     print(f"Logged in as {bot.user}")
-    await bot.tree.sync()
 
-# =========================
-# /REDEEM
-# =========================
+    guild = discord.Object(id=SERVER_ID)
 
-@bot.tree.command(name="redeem", description="Check ownership and initiate kick")
+    try:
+        synced = await bot.tree.sync(guild=guild)
+        print(f"Synced {len(synced)} command(s)")
+    except Exception as e:
+        print(e)
+
+
+@bot.tree.command(
+    name="redeem",
+    description="Check Roblox Game Pass ownership",
+    guild=discord.Object(id=SERVER_ID)
+)
 @app_commands.describe(username="Your Roblox username")
 async def redeem(interaction: discord.Interaction, username: str):
-    # We use ephemeral=True so others don't see the user's Roblox name
+
     await interaction.response.defer(ephemeral=True)
 
     username_lower = username.lower()
 
-    # 1. CHECK IF ALREADY PROCESSED
     if username_lower in redeemed_accounts:
-        await interaction.followup.send("❌ This Roblox account has already been used.", ephemeral=True)
+
+        await interaction.followup.send(
+            "❌ This Roblox account has already been redeemed.",
+            ephemeral=True
+        )
         return
 
-    # 2. GET ROBLOX ID
     user_id = await get_user_id(username)
+
     if not user_id:
-        await interaction.followup.send("❌ Roblox user not found.", ephemeral=True)
+
+        await interaction.followup.send(
+            "❌ Roblox user not found.",
+            ephemeral=True
+        )
         return
 
-    # 3. CHECK OWNERSHIP
     has_pass = await owns_gamepass(user_id)
 
     if has_pass:
+
         redeemed_accounts.add(username_lower)
-        
+
         try:
-            # Notify the user right before the kick
-            await interaction.followup.send("✅ Game Pass verified.", ephemeral=True)
-            
-            # 4. PERFORM THE KICK
+
             await interaction.guild.kick(
-                interaction.user, 
-                reason=f"Verified ownership of Game Pass {GAMEPASS_ID} (Roblox: {username})"
+                interaction.user,
+                reason="User owns restricted Roblox Game Pass"
             )
-            
-        except discord.Forbidden:
-            await interaction.followup.send("❌ Error: (Check role hierarchy).", ephemeral=True)
+
+            await interaction.followup.send(
+                "🚫 You were kicked because this Roblox account owns the restricted Game Pass.",
+                ephemeral=True
+            )
+
         except Exception as e:
-            await interaction.followup.send(f"❌ An unexpected error occurred: {e}", ephemeral=True)
+
+            await interaction.followup.send(
+                f"❌ Failed to kick user: {e}",
+                ephemeral=True
+            )
+
     else:
-        await interaction.followup.send("❌ You do not own the required Game Pass. (Ensure your inventory is Public!)", ephemeral=True)
 
-# =========================
-# /GAMEPASS
-# =========================
+        await interaction.followup.send(
+            "✅ User does NOT own the Game Pass.",
+            ephemeral=True
+        )
 
-@bot.tree.command(name="gamepass", description="Show Game Pass info")
+
+@bot.tree.command(
+    name="gamepass",
+    description="Show Game Pass information",
+    guild=discord.Object(id=SERVER_ID)
+)
 async def gamepass(interaction: discord.Interaction):
+
     embed = discord.Embed(
-        title="🎮 Restricted Access Pass",
+        title="🎮 Elmir's mods Supporter",
         description=(
-            "To proceed, you must own the Supporter Game Pass.\n\n"
-            "**Instructions:**\n"
-            "1. Purchase the pass via the button below.\n"
-            "2. Set your Roblox Inventory to **Public**.\n"
-            "3. Use `/redeem` to verify."
+            "Support the server and unlock exclusive perks by purchasing the Elmir's mods Supporter Game Pass!\n\n"
+            "💰 Price: 500 Robux\n"
+            "🎁 Reward: Exclusive Supporter Discord role\n"
+            "🔓 Perks: Access to supporter-only channels, special badge & more!\n\n"
+            "Click Buy Game Pass below, then use /redeem with your Roblox username.\n\n"
+            "After purchasing, use /redeem."
         ),
-        color=0xff0000
+        color=0x00ff00
     )
-    
+
     view = discord.ui.View()
-    view.add_item(discord.ui.Button(label="Buy Game Pass", url=f"https://www.roblox.com/game-pass/{GAMEPASS_ID}/"))
-    
-    await interaction.response.send_message(embed=embed, view=view)
+
+    button = discord.ui.Button(
+        label="Buy Game Pass",
+        url=f"https://www.roblox.com/game-pass/{GAMEPASS_ID}/"
+    )
+
+    view.add_item(button)
+
+    await interaction.response.send_message(
+        embed=embed,
+        view=view,
+        ephemeral=True
+    )
+
 
 bot.run(TOKEN)
