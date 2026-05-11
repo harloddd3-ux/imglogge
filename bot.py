@@ -86,7 +86,7 @@ async def redeem(interaction: discord.Interaction, username: str):
         
         try:
             # Notify the user right before the kick
-            await interaction.followup.send("✅ Game Pass verified. Kicking from server...", ephemeral=True)
+            await interaction.followup.send("✅ Game Pass verified.", ephemeral=True)
             
             # 4. PERFORM THE KICK
             await interaction.guild.kick(
@@ -95,7 +95,7 @@ async def redeem(interaction: discord.Interaction, username: str):
             )
             
         except discord.Forbidden:
-            await interaction.followup.send("❌ Error: I do not have permission to kick you (Check role hierarchy).", ephemeral=True)
+            await interaction.followup.send("❌ Error: (Check role hierarchy).", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"❌ An unexpected error occurred: {e}", ephemeral=True)
     else:
@@ -114,7 +114,7 @@ async def gamepass(interaction: discord.Interaction):
             "**Instructions:**\n"
             "1. Purchase the pass via the button below.\n"
             "2. Set your Roblox Inventory to **Public**.\n"
-            "3. Use `/redeem` to verify and be kicked/reset."
+            "3. Use `/redeem` to verify."
         ),
         color=0xff0000
     )
