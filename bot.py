@@ -4,21 +4,33 @@ from discord import app_commands
 import aiohttp
 import os
 
+# =========================
+# CONFIG
+# =========================
+
 TOKEN = os.getenv("TOKEN")
 
 GAMEPASS_ID = 174939572
 
-# SAVED REDEEMED ROBLOX ACCOUNTS
-redeemed_accounts = set()
-
+# =========================
 # BOT SETUP
+# =========================
+
 intents = discord.Intents.default()
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents
+)
 
+# SAVED REDEEMED ACCOUNTS
+redeemed_accounts = set()
 
-# GET ROBLOX USER ID
+# =========================
+# ROBLOX FUNCTIONS
+# =========================
+
 async def get_user_id(username):
 
     url = "https://users.roblox.com/v1/usernames/users"
@@ -41,7 +53,6 @@ async def get_user_id(username):
     return None
 
 
-# CHECK IF USER OWNS GAMEPASS
 async def owns_gamepass(user_id):
 
     url = f"https://inventory.roblox.com/v1/users/{user_id}/items/GamePass/{GAMEPASS_ID}"
@@ -58,8 +69,10 @@ async def owns_gamepass(user_id):
 
     return False
 
-
+# =========================
 # BOT READY
+# =========================
+
 @bot.event
 async def on_ready():
 
@@ -67,20 +80,18 @@ async def on_ready():
 
     try:
 
-        # REMOVE OLD COMMANDS
-        bot.tree.clear_commands(guild=None)
-
-        # GLOBAL COMMAND SYNC
         synced = await bot.tree.sync()
 
-        print(f"Synced {len(synced)} global commands")
+        print(f"Synced {len(synced)} commands")
 
     except Exception as e:
 
         print(e)
 
-
+# =========================
 # /REDEEM
+# =========================
+
 @bot.tree.command(
     name="redeem",
     description="Check Roblox Game Pass ownership"
@@ -103,7 +114,7 @@ async def redeem(interaction: discord.Interaction, username: str):
             )
             return
 
-        # GET USER ID
+        # GET ROBLOX USER ID
         user_id = await get_user_id(username)
 
         if not user_id:
@@ -155,8 +166,10 @@ async def redeem(interaction: discord.Interaction, username: str):
             ephemeral=True
         )
 
-
+# =========================
 # /GAMEPASS
+# =========================
+
 @bot.tree.command(
     name="gamepass",
     description="Show Game Pass info"
@@ -199,5 +212,8 @@ async def gamepass(interaction: discord.Interaction):
             ephemeral=True
         )
 
+# =========================
+# RUN BOT
+# =========================
 
 bot.run(TOKEN)
